@@ -1,0 +1,371 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>In Lệnh Sản Xuất</title>
+    
+    <!-- Thư viện QR Code -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Thư viện xuất PDF (html2pdf) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <style>
+        /* --- CẤU HÌNH CƠ BẢN --- */
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        body {
+            font-family: "Times New Roman", Times, serif;
+            background-color: #525659; /* Màu nền tối giống trình xem PDF */
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* --- KHUNG GIẤY A4 --- */
+        #print-area {
+            background-color: white;
+            width: 210mm; /* Chiều rộng chuẩn A4 */
+            min-height: 297mm; /* Chiều cao chuẩn A4 */
+            padding: 15mm 15mm; /* Căn lề an toàn để không bị máy in cắt */
+            margin: 0 auto;
+            position: relative;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            overflow: hidden; /* Ngăn nội dung tràn ra ngoài */
+        }
+
+        /* --- THANH CÔNG CỤ (NÚT BẤM) --- */
+        .toolbar {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            font-size: 14px;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn:hover { transform: translateY(-2px); }
+        .btn-print { background-color: #28a745; } /* Màu xanh lá */
+        .btn-pdf { background-color: #dc3545; }   /* Màu đỏ */
+
+        /* --- WATERMARK --- */
+        .watermark {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 90px;
+            color: rgba(255, 0, 0, 0.1);
+            border: 8px solid rgba(255, 0, 0, 0.1);
+            padding: 20px 40px;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 0;
+            display: none;
+            white-space: nowrap;
+        }
+
+        /* --- BỐ CỤC NỘI DUNG --- */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .company-info h1 { font-size: 18px; margin: 0 0 5px 0; text-transform: uppercase; }
+        .company-info p { margin: 2px 0; font-size: 12px; }
+
+        .title-section { text-align: center; margin-bottom: 20px; }
+        .title-section h2 { font-size: 24px; margin: 0; text-transform: uppercase; }
+        .lsx-number { font-size: 14px; font-weight: bold; margin-top: 5px; }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px 20px;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+        .info-row { display: flex; border-bottom: 1px dotted #ccc; padding-bottom: 2px;}
+        .info-label { font-weight: bold; width: 120px; flex-shrink: 0;}
+        .info-value { flex: 1; word-wrap: break-word; }
+
+        /* --- BẢNG BIỂU --- */
+        .section-header {
+            font-size: 13px; font-weight: bold; text-transform: uppercase;
+            margin-bottom: 5px; margin-top: 15px;
+            border-left: 4px solid #333; padding-left: 6px; background-color: #f1f1f1;
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 10px; }
+        th, td { border: 1px solid #000; padding: 4px; }
+        th { background-color: #e0e0e0; text-align: center; font-weight: bold; }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+
+        /* --- FOOTER KÝ TÊN --- */
+        .footer-sign {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            text-align: center;
+            page-break-inside: avoid; /* Tránh bị cắt đôi khi in */
+        }
+        .sign-box { width: 30%; font-size: 12px; }
+        .sign-title { font-weight: bold; text-transform: uppercase; margin-bottom: 50px; }
+
+        /* --- CẤU HÌNH MEDIA PRINT (KHI BẤM CTRL+P) --- */
+        @page { size: A4 portrait; margin: 0; }
+        @media print {
+            body { background: white; padding: 0; }
+            .toolbar { display: none !important; } /* Ẩn nút khi in */
+            #print-area {
+                box-shadow: none; margin: 0; width: 100%; height: auto;
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- THANH CÔNG CỤ -->
+    <div class="toolbar">
+        <button class="btn btn-print" onclick="window.print()">
+            🖨️ In Ngay
+        </button>
+        <button class="btn btn-pdf" onclick="downloadPDF()">
+            📥 Tải PDF
+        </button>
+    </div>
+
+    <!-- KHUNG GIẤY A4 -->
+    <div id="print-area">
+        <!-- Watermark -->
+        <div id="watermark" class="watermark">BẢN IN DEMO</div>
+
+        <!-- Header -->
+        <div class="header">
+            <div class="company-info">
+                <h1>CÔNG TY SẢN XUẤT BAO BÌ ABC</h1>
+                <p>ĐC: KCN VSIP, Bình Dương | MST: 3700123456</p>
+                <p>Tel: 0274.123.456 | Email: contact@abc.com</p>
+            </div>
+            <div id="qrcode"></div>
+        </div>
+
+        <!-- Tiêu đề -->
+        <div class="title-section">
+            <h2>LỆNH SẢN XUẤT</h2>
+            <div class="lsx-number" id="txt_lenh_sx">...</div>
+        </div>
+
+        <!-- Thông tin chung -->
+        <div class="info-grid">
+            <div class="info-row"><span class="info-label">Khách hàng:</span><span class="info-value" id="txt_khach_hang">...</span></div>
+            <div class="info-row"><span class="info-label">Mã Sản Phẩm:</span><span class="info-value" id="txt_ma_sp">...</span></div>
+            <div class="info-row"><span class="info-label">Ngày bắt đầu:</span><span class="info-value" id="txt_ngay_bd">...</span></div>
+            <div class="info-row"><span class="info-label">Số lượng đặt:</span><span class="info-value" id="txt_sl_dat">...</span></div>
+            <div class="info-row"><span class="info-label">Hạn giao hàng:</span><span class="info-value" id="txt_han_giao">...</span></div>
+            <div class="info-row"><span class="info-label">Ngày in phiếu:</span><span class="info-value" id="txt_ngay_in">...</span></div>
+        </div>
+
+        <!-- I. Vật Tư -->
+        <div class="section-header">I. ĐỊNH MỨC VẬT TƯ (BOM)</div>
+        <table>
+            <thead>
+                <tr>
+                    <th width="5%">STT</th>
+                    <th width="30%">Mã/Tên Vật Tư</th>
+                    <th width="10%">ĐVT</th>
+                    <th width="15%">Định Mức</th>
+                    <th width="15%">SL Yêu Cầu</th>
+                    <th width="10%">Hao hụt</th>
+                    <th width="15%">Ghi chú</th>
+                </tr>
+            </thead>
+            <tbody id="tbody_khvt"></tbody>
+        </table>
+
+        <!-- II. Sản Xuất -->
+        <div class="section-header">II. QUY TRÌNH SẢN XUẤT</div>
+        <table>
+            <thead>
+                <tr>
+                    <th width="5%">STT</th>
+                    <th width="25%">Công Đoạn</th>
+                    <th width="15%">Máy SX</th>
+                    <th width="15%">Bắt Đầu</th>
+                    <th width="15%">Kết Thúc</th>
+                    <th width="10%">SL KH</th>
+                    <th width="15%">Ghi chú</th>
+                </tr>
+            </thead>
+            <tbody id="tbody_khsx"></tbody>
+        </table>
+
+        <!-- Footer -->
+        <div class="footer-sign">
+            <div class="sign-box">
+                <div class="sign-title">NGƯỜI LẬP LỆNH</div>
+                <div>(Ký, họ tên)</div>
+            </div>
+            <div class="sign-box">
+                <div class="sign-title">QUẢN ĐỐC XƯỞNG</div>
+                <div>(Ký, họ tên)</div>
+            </div>
+            <div class="sign-box">
+                <div class="sign-title">DUYỆT SẢN XUẤT</div>
+                <div>(Ký, họ tên)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT LOGIC -->
+    <script>
+        // 1. DATA DEMO
+        const demoData = {
+            lenh_sx: "LSX-20251209-001 (DEMO)",
+            khach_hang: "KH001 - CTY TNHH THỰC PHẨM VIỆT",
+            ma_san_pham: "SP-HOP-BANH-20x20",
+            sl_dat_hang: "5,000 cái",
+            ngay_bat_dau: "09/12/2025",
+            han_giao_hang: "15/12/2025",
+            qr_code: "DEMO-QR",
+            khvt: [
+                { ma_vat_tu: "GIAY-KRAFT-300", dvt: "kg", sl_dinh_muc: "0.25", sl_yeu_cau: "1,250", sl_bu_hao: "10", ghi_chu: "Giấy cuộn khổ 1.2m" },
+                { ma_vat_tu: "MUC-IN-OFFSET", dvt: "kg", sl_dinh_muc: "0.01", sl_yeu_cau: "50", sl_bu_hao: "2", ghi_chu: "Hệ 4 màu CMYK" },
+                { ma_vat_tu: "KEO-DAN-NUOC", dvt: "lít", sl_dinh_muc: "0.005", sl_yeu_cau: "25", sl_bu_hao: "1", ghi_chu: "" }
+            ],
+            khsx: [
+                { ten_cong_doan: "Cắt giấy cuộn", may_san_xuat: "MÁY CẮT 01", ngay_bat_dau: "09/12/2025 08:00", thoi_han_hoan_thanh: "09/12/2025 17:00", sl_yeu_cau: "5000", ghi_chu: "" },
+                { ten_cong_doan: "In Offset", may_san_xuat: "MÁY IN 4 MÀU", ngay_bat_dau: "10/12/2025 08:00", thoi_han_hoan_thanh: "11/12/2025 17:00", sl_yeu_cau: "5000", ghi_chu: "Kiểm tra màu kỹ" },
+                { ten_cong_doan: "Bế hộp", may_san_xuat: "MÁY BẾ TỰ ĐỘNG", ngay_bat_dau: "12/12/2025 08:00", thoi_han_hoan_thanh: "13/12/2025 12:00", sl_yeu_cau: "5000", ghi_chu: "" }
+            ]
+        };
+
+        // 2. LẤY PARAMS URL
+        function getParams() {
+            const params = new URLSearchParams(window.location.search);
+            if (!params.has("lenh_sx")) return null;
+            
+            const safeParse = (str) => {
+                try { return JSON.parse(str || "[]"); } catch (e) { return []; }
+            };
+
+            return {
+                lenh_sx: params.get("lenh_sx"),
+                khach_hang: params.get("khach_hang"),
+                ma_san_pham: params.get("ma_san_pham"),
+                sl_dat_hang: params.get("sl_dat_hang"),
+                ngay_bat_dau: params.get("ngay_bat_dau"),
+                han_giao_hang: params.get("han_giao_hang"),
+                qr_code: params.get("qr_code"),
+                khvt: safeParse(params.get("khvt_json")),
+                khsx: safeParse(params.get("khsx_json"))
+            };
+        }
+
+        // 3. RENDER DỮ LIỆU
+        function render() {
+            let data = getParams();
+            if (!data) {
+                data = demoData;
+                document.getElementById("watermark").style.display = "block";
+            }
+
+            // Thông tin chung
+            document.getElementById("txt_lenh_sx").textContent = data.lenh_sx;
+            document.getElementById("txt_khach_hang").textContent = data.khach_hang;
+            document.getElementById("txt_ma_sp").textContent = data.ma_san_pham;
+            document.getElementById("txt_sl_dat").textContent = data.sl_dat_hang;
+            document.getElementById("txt_ngay_bd").textContent = data.ngay_bat_dau;
+            document.getElementById("txt_han_giao").textContent = data.han_giao_hang;
+            
+            const now = new Date();
+            document.getElementById("txt_ngay_in").textContent = `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()} ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+            // QR Code
+            document.getElementById("qrcode").innerHTML = "";
+            new QRCode(document.getElementById("qrcode"), {
+                text: data.qr_code || data.lenh_sx,
+                width: 70, height: 70
+            });
+
+            // Bảng KHVT
+            const tbodyVT = document.getElementById("tbody_khvt");
+            if (data.khvt && data.khvt.length > 0) {
+                tbodyVT.innerHTML = data.khvt.map((row, i) => `
+                    <tr>
+                        <td class="text-center">${i+1}</td>
+                        <td>${row.ma_vat_tu || ''}</td>
+                        <td class="text-center">${row.dvt || ''}</td>
+                        <td class="text-right">${row.sl_dinh_muc || ''}</td>
+                        <td class="text-right">${row.sl_yeu_cau || ''}</td>
+                        <td class="text-right">${row.sl_bu_hao || ''}</td>
+                        <td>${row.ghi_chu || ''}</td>
+                    </tr>
+                `).join('');
+            } else tbodyVT.innerHTML = '<tr><td colspan="7" class="text-center">Không có dữ liệu</td></tr>';
+
+            // Bảng KHSX
+            const tbodySX = document.getElementById("tbody_khsx");
+            if (data.khsx && data.khsx.length > 0) {
+                tbodySX.innerHTML = data.khsx.map((row, i) => `
+                    <tr>
+                        <td class="text-center">${i+1}</td>
+                        <td>${row.ten_cong_doan || ''}</td>
+                        <td class="text-center">${row.may_san_xuat || ''}</td>
+                        <td class="text-center">${(row.ngay_bat_dau || '').replace(/:00$/, '')}</td>
+                        <td class="text-center">${(row.thoi_han_hoan_thanh || '').replace(/:00$/, '')}</td>
+                        <td class="text-right">${row.sl_yeu_cau || ''}</td>
+                        <td>${row.ghi_chu || ''}</td>
+                    </tr>
+                `).join('');
+            } else tbodySX.innerHTML = '<tr><td colspan="7" class="text-center">Không có dữ liệu</td></tr>';
+        }
+
+        // 4. CHỨC NĂNG TẢI PDF
+        function downloadPDF() {
+            const element = document.getElementById('print-area');
+            const lsxCode = document.getElementById('txt_lenh_sx').textContent;
+            
+            // Cấu hình cho html2pdf
+            const opt = {
+                margin:       0, // Đã căn lề trong CSS của #print-area
+                filename:     `LSX_${lsxCode}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true }, // Scale 2 để nét hơn
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // Thực thi
+            html2pdf().set(opt).from(element).save();
+        }
+
+        window.onload = render;
+    </script>
+</body>
+</html>
