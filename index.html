@@ -4,368 +4,404 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>In Lệnh Sản Xuất</title>
-    
-    <!-- Thư viện QR Code -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <!-- Thư viện xuất PDF (html2pdf) -->
+    <title>Báo Cáo Tổng Hợp Nghỉ Phép</title>
+    <!-- Thư viện html2pdf để tải PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    
-    <style>
-        /* --- CẤU HÌNH CƠ BẢN --- */
-        * {
-            box-sizing: border-box;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-        }
 
+    <style>
+        /* Import Font */
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap');
+
+        /* Cấu hình chung */
+        * { box-sizing: border-box; }
+        
         body {
             font-family: "Times New Roman", Times, serif;
-            background-color: #525659; /* Màu nền tối giống trình xem PDF */
             margin: 0;
             padding: 20px;
+            background-color: #f2f2f2;
+        }
+
+        /* Khổ giấy A4 hiển thị trên web */
+        .page-wrapper {
+            background: white;
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 15mm;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        /* --- HEADER CÔNG TY --- */
+        .company-header {
+            font-family: 'Roboto', Arial, sans-serif;
+            width: 100%;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            border-bottom: 3px solid #004080;
+        }
+
+        .header-logo {
+            width: 90px;
+            height: 90px;
+            flex-shrink: 0;
+            margin-right: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-info {
+            flex-grow: 1;
             display: flex;
             flex-direction: column;
-            align-items: center;
+            justify-content: center;
         }
 
-        /* --- KHUNG GIẤY A4 --- */
-        #print-area {
-            background-color: white;
-            width: 210mm; /* Chiều rộng chuẩn A4 */
-            min-height: 297mm; /* Chiều cao chuẩn A4 */
-            padding: 15mm 15mm; /* Căn lề an toàn để không bị máy in cắt */
-            margin: 0 auto;
-            position: relative;
-            box-shadow: 0 0 15px rgba(0,0,0,0.5);
-            overflow: hidden; /* Ngăn nội dung tràn ra ngoài */
+        .company-name-vn {
+            font-size: 18px;
+            font-weight: 900;
+            color: #004080;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+            line-height: 1.2;
         }
 
-        /* --- THANH CÔNG CỤ (NÚT BẤM) --- */
-        .toolbar {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            display: flex;
-            gap: 10px;
-            z-index: 1000;
+        .company-name-en {
+            font-size: 11px;
+            font-weight: 700;
+            color: #d68910;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
         }
 
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            font-family: Arial, sans-serif;
+        .company-details {
+            font-size: 10px;
+            color: #444;
+            line-height: 1.5;
+            border-top: 1px solid #eee;
+            padding-top: 8px;
+        }
+        .company-details p { margin: 1px 0; }
+
+        /* --- NỘI DUNG BÁO CÁO --- */
+        .report-title {
+            text-align: center;
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+        .report-title h1 {
+            margin: 0;
+            font-size: 18pt;
+            text-transform: uppercase;
+            color: #333;
+        }
+        .report-title p {
+            margin: 5px 0;
+            font-style: italic;
+            font-size: 12pt;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11pt;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 6px 4px;
+            vertical-align: middle;
+        }
+        th {
+            background-color: #eee;
+            text-align: center;
             font-weight: bold;
-            font-size: 14px;
+            font-family: 'Roboto', Arial, sans-serif;
+        }
+        td.center { text-align: center; }
+
+        /* Chữ ký */
+        .footer-sign {
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+            page-break-inside: avoid; /* Tránh bị ngắt trang giữa chữ ký */
+        }
+        .sign-box {
+            text-align: center;
+            width: 40%;
+        }
+        .sign-box h4 { margin-bottom: 70px; text-transform: uppercase; font-size: 11pt; }
+
+        /* Watermark */
+        .watermark {
+            position: absolute;
+            top: 55%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 100px;
+            font-weight: bold;
+            color: rgba(255, 0, 0, 0.1);
+            border: 5px solid rgba(255, 0, 0, 0.1);
+            padding: 20px;
+            z-index: 0; /* Để dưới text */
+            pointer-events: none;
+            display: none;
+            font-family: Arial, sans-serif;
+        }
+        .watermark.show { display: block; }
+
+        /* --- NÚT ĐIỀU KHIỂN --- */
+        .control-panel {
+            text-align: center;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        .btn {
+            padding: 10px 25px;
             color: white;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            transition: transform 0.2s;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 4px;
+            font-family: 'Roboto', sans-serif;
+            font-weight: 500;
             display: flex;
             align-items: center;
             gap: 8px;
+            transition: opacity 0.2s;
         }
+        .btn:hover { opacity: 0.9; }
         
-        .btn:hover { transform: translateY(-2px); }
-        .btn-print { background-color: #28a745; } /* Màu xanh lá */
-        .btn-pdf { background-color: #dc3545; }   /* Màu đỏ */
+        .btn-print { background: #004080; } /* Xanh đậm */
+        .btn-pdf { background: #28a745; }   /* Xanh lá */
+        .btn-loading { background: #6c757d; cursor: not-allowed; }
 
-        /* --- WATERMARK --- */
-        .watermark {
-            position: absolute;
-            top: 40%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(-45deg);
-            font-size: 90px;
-            color: rgba(255, 0, 0, 0.1);
-            border: 8px solid rgba(255, 0, 0, 0.1);
-            padding: 20px 40px;
-            font-weight: bold;
-            pointer-events: none;
-            z-index: 0;
-            display: none;
-            white-space: nowrap;
-        }
-
-        /* --- BỐ CỤC NỘI DUNG --- */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            border-bottom: 2px solid #000;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-        }
-        .company-info h1 { font-size: 18px; margin: 0 0 5px 0; text-transform: uppercase; }
-        .company-info p { margin: 2px 0; font-size: 12px; }
-
-        .title-section { text-align: center; margin-bottom: 20px; }
-        .title-section h2 { font-size: 24px; margin: 0; text-transform: uppercase; }
-        .lsx-number { font-size: 14px; font-weight: bold; margin-top: 5px; }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 5px 20px;
-            margin-bottom: 20px;
-            font-size: 13px;
-        }
-        .info-row { display: flex; border-bottom: 1px dotted #ccc; padding-bottom: 2px;}
-        .info-label { font-weight: bold; width: 120px; flex-shrink: 0;}
-        .info-value { flex: 1; word-wrap: break-word; }
-
-        /* --- BẢNG BIỂU --- */
-        .section-header {
-            font-size: 13px; font-weight: bold; text-transform: uppercase;
-            margin-bottom: 5px; margin-top: 15px;
-            border-left: 4px solid #333; padding-left: 6px; background-color: #f1f1f1;
-        }
-        table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 10px; }
-        th, td { border: 1px solid #000; padding: 4px; }
-        th { background-color: #e0e0e0; text-align: center; font-weight: bold; }
-        .text-center { text-align: center; }
-        .text-right { text-align: right; }
-
-        /* --- FOOTER KÝ TÊN --- */
-        .footer-sign {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 30px;
-            text-align: center;
-            page-break-inside: avoid; /* Tránh bị cắt đôi khi in */
-        }
-        .sign-box { width: 30%; font-size: 12px; }
-        .sign-title { font-weight: bold; text-transform: uppercase; margin-bottom: 50px; }
-
-        /* --- CẤU HÌNH MEDIA PRINT (KHI BẤM CTRL+P) --- */
-        @page { size: A4 portrait; margin: 0; }
+        /* --- CẤU HÌNH KHI IN (Print Dialog) --- */
         @media print {
-            body { background: white; padding: 0; }
-            .toolbar { display: none !important; } /* Ẩn nút khi in */
-            #print-area {
-                box-shadow: none; margin: 0; width: 100%; height: auto;
-                page-break-after: always;
-            }
+            body { background: none; margin: 0; padding: 0; }
+            .page-wrapper { width: 100%; margin: 0; box-shadow: none; padding: 0; }
+            .control-panel { display: none !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
     </style>
 </head>
 <body>
 
-    <!-- THANH CÔNG CỤ -->
-    <div class="toolbar">
+    <!-- THANH ĐIỀU KHIỂN -->
+    <div class="control-panel" id="controlPanel">
         <button class="btn btn-print" onclick="window.print()">
             🖨️ In Ngay
         </button>
-        <button class="btn btn-pdf" onclick="downloadPDF()">
-            📥 Tải PDF
+        <button class="btn btn-pdf" onclick="downloadPDF(this)">
+            📥 Tải về PDF
         </button>
     </div>
 
-    <!-- KHUNG GIẤY A4 -->
-    <div id="print-area">
-        <!-- Watermark -->
-        <div id="watermark" class="watermark">BẢN IN DEMO</div>
+    <!-- KHUNG TRANG GIẤY (Phần này sẽ được in/tải) -->
+    <div class="page-wrapper" id="contentToPrint">
+        <!-- WATERMARK DEMO -->
+        <div id="demoWatermark" class="watermark">BẢN DEMO</div>
 
-        <!-- Header -->
-        <div class="header">
-            <div class="company-info">
-                <h1>CÔNG TY SẢN XUẤT BAO BÌ ABC</h1>
-                <p>ĐC: KCN VSIP, Bình Dương | MST: 3700123456</p>
-                <p>Tel: 0274.123.456 | Email: contact@abc.com</p>
+        <!-- HEADER CÔNG TY -->
+        <header class="company-header">
+            <div class="header-logo">
+                <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#004080;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#0066cc;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <path fill="url(#grad1)" d="M256 0l221.7 128v256L256 512 34.3 384V128L256 0zm0 74L98.3 165v182L256 438l157.7-91V165L256 74z"/>
+                    <path fill="#d68910" d="M256 140l-90 52v104l90 52 90-52V192l-90-52z"/>
+                    <path fill="#ffffff" d="M256 200l-40 24v48l40 24 40-24v-48l-40-24z"/>
+                </svg>
             </div>
-            <div id="qrcode"></div>
+            <div class="header-info">
+                <div class="company-name-vn">CÔNG TY CỔ PHẦN TẬP ĐOÀN CÔNG NGHIỆP NAM VIỆT</div>
+                <div class="company-name-en">NAM VIET INDUSTRIAL GROUP CORPORATION (NAVICO)</div>
+                <div class="company-details">
+                    <p><strong>Trụ sở:</strong> Tầng 18, Landmark Tower, 55 Nguyễn Văn Linh, Q.7, TP.HCM</p>
+                    <p>
+                        <strong>MST:</strong> 0312345678 &nbsp;|&nbsp; 
+                        <strong>Tel:</strong> (028) 5411 9999 &nbsp;|&nbsp; 
+                        <strong>Email:</strong> info@navicogroup.com.vn
+                    </p>
+                </div>
+            </div>
+        </header>
+
+        <!-- TIÊU ĐỀ -->
+        <div class="report-title">
+            <h1>BÁO CÁO TỔNG HỢP NGHỈ PHÉP</h1>
+            <p id="timeRange">Thời gian: ...</p>
         </div>
 
-        <!-- Tiêu đề -->
-        <div class="title-section">
-            <h2>LỆNH SẢN XUẤT</h2>
-            <div class="lsx-number" id="txt_lenh_sx">...</div>
-        </div>
-
-        <!-- Thông tin chung -->
-        <div class="info-grid">
-            <div class="info-row"><span class="info-label">Khách hàng:</span><span class="info-value" id="txt_khach_hang">...</span></div>
-            <div class="info-row"><span class="info-label">Mã Sản Phẩm:</span><span class="info-value" id="txt_ma_sp">...</span></div>
-            <div class="info-row"><span class="info-label">Ngày bắt đầu:</span><span class="info-value" id="txt_ngay_bd">...</span></div>
-            <div class="info-row"><span class="info-label">Số lượng đặt:</span><span class="info-value" id="txt_sl_dat">...</span></div>
-            <div class="info-row"><span class="info-label">Hạn giao hàng:</span><span class="info-value" id="txt_han_giao">...</span></div>
-            <div class="info-row"><span class="info-label">Ngày in phiếu:</span><span class="info-value" id="txt_ngay_in">...</span></div>
-        </div>
-
-        <!-- I. Vật Tư -->
-        <div class="section-header">I. ĐỊNH MỨC VẬT TƯ (BOM)</div>
+        <!-- BẢNG DỮ LIỆU -->
         <table>
             <thead>
                 <tr>
-                    <th width="5%">STT</th>
-                    <th width="30%">Mã/Tên Vật Tư</th>
-                    <th width="10%">ĐVT</th>
-                    <th width="15%">Định Mức</th>
-                    <th width="15%">SL Yêu Cầu</th>
-                    <th width="10%">Hao hụt</th>
-                    <th width="15%">Ghi chú</th>
+                    <th style="width: 5%">STT</th>
+                    <th style="width: 18%">Họ và tên</th>
+                    <th style="width: 10%">Thời gian</th>
+                    <th style="width: 12%">Từ ngày</th>
+                    <th style="width: 12%">Đến ngày</th>
+                    <th style="width: 8%">Đã nghỉ</th>
+                    <th style="width: 15%">Người nhận BG</th>
+                    <th>Nội dung BG</th>
                 </tr>
             </thead>
-            <tbody id="tbody_khvt"></tbody>
+            <tbody id="reportData">
+                <!-- Javascript điền dữ liệu -->
+            </tbody>
         </table>
 
-        <!-- II. Sản Xuất -->
-        <div class="section-header">II. QUY TRÌNH SẢN XUẤT</div>
-        <table>
-            <thead>
-                <tr>
-                    <th width="5%">STT</th>
-                    <th width="25%">Công Đoạn</th>
-                    <th width="15%">Máy SX</th>
-                    <th width="15%">Bắt Đầu</th>
-                    <th width="15%">Kết Thúc</th>
-                    <th width="10%">SL KH</th>
-                    <th width="15%">Ghi chú</th>
-                </tr>
-            </thead>
-            <tbody id="tbody_khsx"></tbody>
-        </table>
-
-        <!-- Footer -->
+        <!-- CHỮ KÝ -->
         <div class="footer-sign">
             <div class="sign-box">
-                <div class="sign-title">NGƯỜI LẬP LỆNH</div>
-                <div>(Ký, họ tên)</div>
+                <h4>Người Lập Biểu</h4>
+                <p>(Ký, ghi rõ họ tên)</p>
             </div>
             <div class="sign-box">
-                <div class="sign-title">QUẢN ĐỐC XƯỞNG</div>
-                <div>(Ký, họ tên)</div>
+                <h4>Trưởng Bộ Phận</h4>
+                <p>(Ký, ghi rõ họ tên)</p>
             </div>
-            <div class="sign-box">
-                <div class="sign-title">DUYỆT SẢN XUẤT</div>
-                <div>(Ký, họ tên)</div>
-            </div>
+        </div>
+        
+        <div style="font-size: 10px; text-align: right; margin-top: 20px; color: #888; border-top: 1px solid #eee; padding-top:5px;">
+            Hệ thống báo cáo tự động AppSheet - Ngày in: <span id="printDate"></span>
         </div>
     </div>
 
-    <!-- SCRIPT LOGIC -->
+    <!-- JAVASCRIPT XỬ LÝ -->
     <script>
-        // 1. DATA DEMO
-        const demoData = {
-            lenh_sx: "LSX-20251209-001 (DEMO)",
-            khach_hang: "KH001 - CTY TNHH THỰC PHẨM VIỆT",
-            ma_san_pham: "SP-HOP-BANH-20x20",
-            sl_dat_hang: "5,000 cái",
-            ngay_bat_dau: "09/12/2025",
-            han_giao_hang: "15/12/2025",
-            qr_code: "DEMO-QR",
-            khvt: [
-                { ma_vat_tu: "GIAY-KRAFT-300", dvt: "kg", sl_dinh_muc: "0.25", sl_yeu_cau: "1,250", sl_bu_hao: "10", ghi_chu: "Giấy cuộn khổ 1.2m" },
-                { ma_vat_tu: "MUC-IN-OFFSET", dvt: "kg", sl_dinh_muc: "0.01", sl_yeu_cau: "50", sl_bu_hao: "2", ghi_chu: "Hệ 4 màu CMYK" },
-                { ma_vat_tu: "KEO-DAN-NUOC", dvt: "lít", sl_dinh_muc: "0.005", sl_yeu_cau: "25", sl_bu_hao: "1", ghi_chu: "" }
-            ],
-            khsx: [
-                { ten_cong_doan: "Cắt giấy cuộn", may_san_xuat: "MÁY CẮT 01", ngay_bat_dau: "09/12/2025 08:00", thoi_han_hoan_thanh: "09/12/2025 17:00", sl_yeu_cau: "5000", ghi_chu: "" },
-                { ten_cong_doan: "In Offset", may_san_xuat: "MÁY IN 4 MÀU", ngay_bat_dau: "10/12/2025 08:00", thoi_han_hoan_thanh: "11/12/2025 17:00", sl_yeu_cau: "5000", ghi_chu: "Kiểm tra màu kỹ" },
-                { ten_cong_doan: "Bế hộp", may_san_xuat: "MÁY BẾ TỰ ĐỘNG", ngay_bat_dau: "12/12/2025 08:00", thoi_han_hoan_thanh: "13/12/2025 12:00", sl_yeu_cau: "5000", ghi_chu: "" }
-            ]
-        };
-
-        // 2. LẤY PARAMS URL
-        function getParams() {
-            const params = new URLSearchParams(window.location.search);
-            if (!params.has("lenh_sx")) return null;
-            
-            const safeParse = (str) => {
-                try { return JSON.parse(str || "[]"); } catch (e) { return []; }
-            };
-
-            return {
-                lenh_sx: params.get("lenh_sx"),
-                khach_hang: params.get("khach_hang"),
-                ma_san_pham: params.get("ma_san_pham"),
-                sl_dat_hang: params.get("sl_dat_hang"),
-                ngay_bat_dau: params.get("ngay_bat_dau"),
-                han_giao_hang: params.get("han_giao_hang"),
-                qr_code: params.get("qr_code"),
-                khvt: safeParse(params.get("khvt_json")),
-                khsx: safeParse(params.get("khsx_json"))
-            };
+        // 1. LẤY THAM SỐ URL
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
         }
 
-        // 3. RENDER DỮ LIỆU
-        function render() {
-            let data = getParams();
-            if (!data) {
-                data = demoData;
-                document.getElementById("watermark").style.display = "block";
-            }
-
-            // Thông tin chung
-            document.getElementById("txt_lenh_sx").textContent = data.lenh_sx;
-            document.getElementById("txt_khach_hang").textContent = data.khach_hang;
-            document.getElementById("txt_ma_sp").textContent = data.ma_san_pham;
-            document.getElementById("txt_sl_dat").textContent = data.sl_dat_hang;
-            document.getElementById("txt_ngay_bd").textContent = data.ngay_bat_dau;
-            document.getElementById("txt_han_giao").textContent = data.han_giao_hang;
-            
-            const now = new Date();
-            document.getElementById("txt_ngay_in").textContent = `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()} ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
-
-            // QR Code
-            document.getElementById("qrcode").innerHTML = "";
-            new QRCode(document.getElementById("qrcode"), {
-                text: data.qr_code || data.lenh_sx,
-                width: 70, height: 70
-            });
-
-            // Bảng KHVT
-            const tbodyVT = document.getElementById("tbody_khvt");
-            if (data.khvt && data.khvt.length > 0) {
-                tbodyVT.innerHTML = data.khvt.map((row, i) => `
-                    <tr>
-                        <td class="text-center">${i+1}</td>
-                        <td>${row.ma_vat_tu || ''}</td>
-                        <td class="text-center">${row.dvt || ''}</td>
-                        <td class="text-right">${row.sl_dinh_muc || ''}</td>
-                        <td class="text-right">${row.sl_yeu_cau || ''}</td>
-                        <td class="text-right">${row.sl_bu_hao || ''}</td>
-                        <td>${row.ghi_chu || ''}</td>
-                    </tr>
-                `).join('');
-            } else tbodyVT.innerHTML = '<tr><td colspan="7" class="text-center">Không có dữ liệu</td></tr>';
-
-            // Bảng KHSX
-            const tbodySX = document.getElementById("tbody_khsx");
-            if (data.khsx && data.khsx.length > 0) {
-                tbodySX.innerHTML = data.khsx.map((row, i) => `
-                    <tr>
-                        <td class="text-center">${i+1}</td>
-                        <td>${row.ten_cong_doan || ''}</td>
-                        <td class="text-center">${row.may_san_xuat || ''}</td>
-                        <td class="text-center">${(row.ngay_bat_dau || '').replace(/:00$/, '')}</td>
-                        <td class="text-center">${(row.thoi_han_hoan_thanh || '').replace(/:00$/, '')}</td>
-                        <td class="text-right">${row.sl_yeu_cau || ''}</td>
-                        <td>${row.ghi_chu || ''}</td>
-                    </tr>
-                `).join('');
-            } else tbodySX.innerHTML = '<tr><td colspan="7" class="text-center">Không có dữ liệu</td></tr>';
+        // 2. FORMAT NGÀY GIỜ
+        function formatDate(dateStr) {
+            if (!dateStr) return "";
+            return dateStr.replace(/:00(\s|$)/, "$1").trim(); 
         }
 
-        // 4. CHỨC NĂNG TẢI PDF
-        function downloadPDF() {
-            const element = document.getElementById('print-area');
-            const lsxCode = document.getElementById('txt_lenh_sx').textContent;
+        // 3. XỬ LÝ TẢI PDF
+        function downloadPDF(btn) {
+            // Hiệu ứng nút đang tải
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "⏳ Đang tạo PDF...";
+            btn.classList.add('btn-loading');
+            btn.disabled = true;
+
+            const element = document.getElementById('contentToPrint');
             
-            // Cấu hình cho html2pdf
+            // Cấu hình html2pdf
             const opt = {
-                margin:       0, // Đã căn lề trong CSS của #print-area
-                filename:     `LSX_${lsxCode}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true }, // Scale 2 để nét hơn
+                margin:       [5, 5, 5, 5], // Căn lề file PDF (mm)
+                filename:     'Bao_Cao_Nghi_Phep.pdf',
+                image:        { type: 'jpeg', quality: 0.98 }, // Chất lượng ảnh cao
+                html2canvas:  { scale: 2, useCORS: true, scrollY: 0 }, // Scale 2 để chữ nét hơn
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            // Thực thi
-            html2pdf().set(opt).from(element).save();
+            // Thực hiện chuyển đổi và tải xuống
+            html2pdf().set(opt).from(element).save().then(() => {
+                // Reset nút sau khi xong
+                btn.innerHTML = originalText;
+                btn.classList.remove('btn-loading');
+                btn.disabled = false;
+            }).catch(err => {
+                console.error(err);
+                alert("Lỗi khi tạo PDF. Vui lòng thử dùng nút 'In Ngay' và chọn 'Lưu dưới dạng PDF'.");
+                btn.innerHTML = originalText;
+                btn.classList.remove('btn-loading');
+                btn.disabled = false;
+            });
         }
 
-        window.onload = render;
+        // 4. DỮ LIỆU DEMO
+        const demoData = [
+            {ho_va_ten: "D.V.Hiếu", thoi_gian_phep_ngay: "3 ngày", tu_ngay_gio: "11/04/2025 1:00", den_ngay_gio: "11/07/2025 0:00", so_ngay_da_nghi_trong_thang: 0, nguoi_ban_giao_cong_viec: "Nguyễn Minh Anh", noi_dung_ban_giao: "dhfverufg"},
+            {ho_va_ten: "T.V.Tứ", thoi_gian_phep_ngay: "3 ngày", tu_ngay_gio: "11/05/2025 1:00", den_ngay_gio: "11/08/2025 0:00", so_ngay_da_nghi_trong_thang: 0, nguoi_ban_giao_cong_viec: "Nguyễn Minh Anh", noi_dung_ban_giao: ""},
+            {ho_va_ten: "Ngọc", thoi_gian_phep_ngay: "3 ngày", tu_ngay_gio: "11/06/2025 1:00", den_ngay_gio: "11/09/2025 0:00", so_ngay_da_nghi_trong_thang: 0, nguoi_ban_giao_cong_viec: "Nguyễn Minh Anh", noi_dung_ban_giao: ""},
+            {ho_va_ten: "D.V.Hiếu", thoi_gian_phep_ngay: "3 ngày", tu_ngay_gio: "11/07/2025 1:00", den_ngay_gio: "11/10/2025 0:00", so_ngay_da_nghi_trong_thang: 0, nguoi_ban_giao_cong_viec: "Nguyễn Minh Anh", noi_dung_ban_giao: ""},
+            {ho_va_ten: "T.V.Tứ", thoi_gian_phep_ngay: "nửa ngày", tu_ngay_gio: "11/08/2025", den_ngay_gio: "08/11/2025 0:00", so_ngay_da_nghi_trong_thang: 0, nguoi_ban_giao_cong_viec: "Nguyễn Minh Anh", noi_dung_ban_giao: "jdbcvecjbhdcvu"},
+            {ho_va_ten: "Nguyễn Minh Anh", thoi_gian_phep_ngay: "4 ngày", tu_ngay_gio: "17/12/2025 11:40", den_ngay_gio: "21/12/2025 11:40", so_ngay_da_nghi_trong_thang: 0, nguoi_ban_giao_cong_viec: "Ngọc", noi_dung_ban_giao: "mô tả công việc chi tiết"},
+            {ho_va_ten: "Phạm Văn F", thoi_gian_phep_ngay: "1 ngày", tu_ngay_gio: "22/12/2025 08:00", den_ngay_gio: "22/12/2025 17:00", so_ngay_da_nghi_trong_thang: 1, nguoi_ban_giao_cong_viec: "Lê Thị G", noi_dung_ban_giao: "Hồ sơ thầu"},
+            {ho_va_ten: "Trần Hữu H", thoi_gian_phep_ngay: "0.5 ngày", tu_ngay_gio: "25/12/2025 08:00", den_ngay_gio: "25/12/2025 12:00", so_ngay_da_nghi_trong_thang: 0, nguoi_ban_giao_cong_viec: "Nguyễn K", noi_dung_ban_giao: "Chìa khóa kho"},
+            {ho_va_ten: "Hoàng Yến", thoi_gian_phep_ngay: "2 ngày", tu_ngay_gio: "28/12/2025 08:00", den_ngay_gio: "29/12/2025 17:00", so_ngay_da_nghi_trong_thang: 0, nguoi_ban_giao_cong_viec: "Ban GĐ", noi_dung_ban_giao: "Báo cáo tài chính"},
+            {ho_va_ten: "Lê Lợi", thoi_gian_phep_ngay: "1 ngày", tu_ngay_gio: "30/12/2025 08:00", den_ngay_gio: "30/12/2025 17:00", so_ngay_da_nghi_trong_thang: 2, nguoi_ban_giao_cong_viec: "Nguyễn Trãi", noi_dung_ban_giao: "Chiến lược 2026"}
+        ];
+
+        // 5. MAIN LOGIC
+        window.onload = function() {
+            const rawData = getQueryParam('data');
+            const tuNgay = getQueryParam('tu_ngay');
+            const denNgay = getQueryParam('den_ngay');
+            
+            let dataToRender = [];
+            let isDemo = true;
+
+            if (tuNgay && denNgay) {
+                document.getElementById('timeRange').innerText = `Từ ngày: ${tuNgay} - Đến ngày: ${denNgay}`;
+            } else {
+                document.getElementById('timeRange').innerText = "Từ ngày: 01/01/2025 - Đến ngày: 31/12/2025 (Dữ liệu mẫu)";
+            }
+
+            if (rawData) {
+                try {
+                    const jsonString = decodeURIComponent(rawData);
+                    dataToRender = JSON.parse(jsonString);
+                    if (dataToRender.length > 0) isDemo = false;
+                } catch (e) {
+                    console.error("JSON Error:", e);
+                    dataToRender = demoData;
+                }
+            } else {
+                dataToRender = demoData;
+            }
+
+            if (isDemo) {
+                document.getElementById('demoWatermark').classList.add('show');
+            } else {
+                document.getElementById('demoWatermark').classList.remove('show');
+            }
+
+            const tbody = document.getElementById('reportData');
+            tbody.innerHTML = "";
+
+            if (dataToRender.length === 0) {
+                 tbody.innerHTML = "<tr><td colspan='8' class='center'>Không có dữ liệu nghỉ phép trong khoảng thời gian này.</td></tr>";
+            } else {
+                dataToRender.forEach((item, index) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="center">${index + 1}</td>
+                        <td style="font-weight:500;">${item.ho_va_ten || ''}</td>
+                        <td class="center">${item.thoi_gian_phep_ngay || ''}</td>
+                        <td>${formatDate(item.tu_ngay_gio)}</td>
+                        <td>${formatDate(item.den_ngay_gio)}</td>
+                        <td class="center">${item.so_ngay_da_nghi_trong_thang || 0}</td>
+                        <td>${item.nguoi_ban_giao_cong_viec || ''}</td>
+                        <td>${item.noi_dung_ban_giao || ''}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            document.getElementById('printDate').innerText = new Date().toLocaleString('vi-VN');
+        };
     </script>
 </body>
 </html>
